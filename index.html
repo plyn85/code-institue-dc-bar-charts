@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     <title>D3 and Scalable Vector Graphics</title>
-
+    <style>
+      div {
+        clear: left;
+      }
+    </style>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/dc/2.1.8/dc.min.css"
@@ -26,8 +30,21 @@
     ></script>
   </head>
   <body>
-    <div id="chart-here"></div>
+    <!-- adding divs for the bar charts here -->
+    <h3>Total Spend Per Person</h3>
+    <div>
+      <div id="per-person-chart"></div>
+    </div>
+    <div>
+      <h3>Total Spend Per Store</h3>
+      <div id="per-store-chart"></div>
+    </div>
+    <div>
+      <h3>Total Spend Per State</h3>
+      <div id="per-state-chart"></div>
+    </div>
     <script>
+      // adding data for bar chart here
       var transactionsData = [
         { name: "Tom", store: "Acme", state: "NY", spend: 100 },
         { name: "Tom", store: "Big Co.", state: "NY", spend: 200 },
@@ -43,10 +60,10 @@
       var total_spend_per_person = name_dim
         .group()
         .reduceSum(dc.pluck("spend"));
-      dc.barChart("#chart-here")
-        .width(500)
-        .height(650)
-        .margins({ top: 10, right: 50, bottom: 30, left: 80 })
+      dc.barChart("#per-person-chart")
+        .width(300)
+        .height(150)
+        .margins({ top: 10, right: 50, bottom: 30, left: 50 })
         .dimension(name_dim)
         .group(total_spend_per_person)
         .transitionDuration(500)
@@ -54,7 +71,41 @@
         .xUnits(dc.units.ordinal)
         .xAxisLabel("Person")
         .yAxis()
-        .ticks(5);
+        .ticks(4);
+
+      var store_dim = ndx.dimension(dc.pluck("store"));
+      var total_spend_per_store = store_dim
+        .group()
+        .reduceSum(dc.pluck("spend"));
+      dc.barChart("#per-store-chart")
+        .width(300)
+        .height(150)
+        .margins({ top: 10, right: 50, bottom: 30, left: 50 })
+        .dimension(store_dim)
+        .group(total_spend_per_store)
+        .transitionDuration(500)
+        .x(d3.scale.ordinal())
+        .xUnits(dc.units.ordinal)
+        .xAxisLabel("Store")
+        .yAxis()
+        .ticks(4);
+
+      var state_dim = ndx.dimension(dc.pluck("state"));
+      var total_spend_per_state = state_dim
+        .group()
+        .reduceSum(dc.pluck("spend"));
+      dc.barChart("#per-state-chart")
+        .width(300)
+        .height(150)
+        .margins({ top: 10, right: 50, bottom: 30, left: 50 })
+        .dimension(state_dim)
+        .group(total_spend_per_state)
+        .transitionDuration(500)
+        .x(d3.scale.ordinal())
+        .xUnits(dc.units.ordinal)
+        .xAxisLabel("State")
+        .yAxis()
+        .ticks(4);
 
       dc.renderAll();
     </script>
