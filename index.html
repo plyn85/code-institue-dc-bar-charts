@@ -39,39 +39,63 @@
   </head>
   <body>
     <!-- adding divs for the bar charts here -->
-    <h3>Total Spend Per Person</h3>
+
     <div>
+      <h3>Total Spend Per Person</h3>
       <div id="per-person-chart"></div>
+    </div>
+    <div>
+      <h3>Total Spend Per Store</h3>
+      <div id="per-store-chart"></div>
+    </div>
+    <div>
+      <h3>Total Spend Per State</h3>
+      <div id="per-state-chart"></div>
     </div>
 
     <script>
       queue()
-        .defer(d3.json, "data.json") // does gets the json file brings it back in the form of d3
+        .defer(d3.json, "data.json") // this  gets the json file brings it back in the form of d3
         .await(makeGraphs); // what every you call function here must match custom function below
 
       function makeGraphs(error, transactionsData) {
-        // name of function here must match whats in await
-        var ndx = crossfilter(transactionsData); //creating a new cross filter object here
-        var name_dim = ndx.dimension(dc.pluck("name")); // creating a new dimesion here suing names from json file
-        var total_spend_per_person = name_dim
+        var ndx = crossfilter(transactionsData);
+
+        var name_dim = ndx.dimension(dc.pluck("name")); // grabbing the names of the json array here
+        var total_spend = name_dim.group().reduceSum(dc.pluck("spend")); // group the names of json array an breaking it into spend per name is whats happening here
+
+        dc.pieChart("#per-person-chart") // adding the pie chart to the id of div here
+          .height(300) // adding height an a radius for the pie chart here
+          .radius(90)
+          .transitionDuration(1500) // adding a transtion here
+          .dimension(name_dim) // name_div var from above here
+          .group(total_spend); // grouping total_spend var from above here
+
+        var store_dim = ndx.dimension(dc.pluck("store")); // grabbing the stores of the json array here
+        var total_spend_per_store = store_dim
           .group()
-          .reduceSum(dc.pluck("spend")); // group am sum here based on the dimesion in line above
-        //creating the bar chart here
+          .reduceSum(dc.pluck("spend")); // group the stores of json array an breaking it into spend per name is whats happening here
 
-        dc.barChart("#per-person-chart") // attching the barchart to the div created above here
-          .width("300")
-          .height("150")
-          .margins({ top: 10, right: 50, bottom: 30, left: 50 })
-          .dimension(name_dim)
-          .group(total_spend_per_person)
-          .transitionDuration(500)
-          .x(d3.scale.ordinal())
-          .xUnits(dc.units.ordinal)
-          .xAxisLabel("Person")
-          .yAxis()
-          .ticks(4);
+        dc.pieChart("#per-store-chart") // adding the pie chart to the id of div here
+          .height(300) // adding height an a radius for the pie chart here
+          .radius(90)
+          .transitionDuration(1500) // adding a transtion here
+          .dimension(store_dim) // name_div var from above here
+          .group(total_spend_per_store); // grouping total_spend_per_store var from above here
 
-        dc.renderAll();
+        var state_dim = ndx.dimension(dc.pluck("state")); // grabbing the states of the json array here
+        var total_spend_per_state = state_dim
+          .group()
+          .reduceSum(dc.pluck("spend")); // group the states of json array an breaking it into spend per name is whats happening here
+
+        dc.pieChart("#per-state-chart") // adding the pie chart to the id of div here
+          .height(300) // adding the pie chart to the id of div here
+          .radius(90)
+          .transitionDuration(1500) // adding a transtion here
+          .dimension(state_dim) // name_div var from above here
+          .group(total_spend_per_state); // grouping total_spend_state var from above here
+
+        dc.renderAll(); // must be added to render the pie charts
       }
     </script>
   </body>
