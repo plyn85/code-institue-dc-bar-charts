@@ -74,7 +74,7 @@
         var store_dim = ndx.dimension(dc.pluck("store")); // grabbing the stores of the json array here
         var total_spend_per_store = store_dim
           .group()
-          .reduceSum(dc.pluck("spend")); // group the stores of json array an breaking it into spend per name is whats happening here
+          .reduceSum(dc.pluck("spend")); // group the stores of json array and  breaking it into spend per name is whats happening here
 
         dc.pieChart("#per-store-chart") // adding the pie chart to the id of div here
           .height(300) // adding height an a radius for the pie chart here
