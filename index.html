@@ -35,13 +35,9 @@
     ></script>
   </head>
   <body>
-    <h1>Data Visualisation</h1>
-
-    <h2>DC LineChart</h2>
-
     <div>
-      <h3>Spent Per Month Per Person</h3>
-      <div id="composite-chart"></div>
+      <h3>Spend Per Person Broken Down By Store</h3>
+      <div id="stacked-chart"></div>
     </div>
 
     <script>
@@ -51,66 +47,45 @@
       function makeGraphs(error, transactionsData) {
         // setting up all the varibles first
         var ndx = crossfilter(transactionsData); //cross filter will group the data by batch an then compute the sum of those batches
-        var parseDate = d3.time.format("%d/%m/%Y").parse; // making sure the data here is formatted in a way that can be repersented by crossfilter,dc and d3
-        transactionsData.forEach(function(d) {
-          //looping trough the dates from json object here
-          d.date = parseDate(d.date); //parsing(converting some sort of date an time infomation into am object) the date entries here
+        var name_dim = ndx.dimension(dc.pluck("name"));
+
+        var spendByNamesStoreA = name_dim.group().reduceSum(function(d) {
+          if (d.store === "A") {
+            return +d.spend;
+          } else {
+            return 0;
+          }
         });
 
-        var date_dim = ndx.dimension(dc.pluck("date")); // setting up the date dimesions first
-        var minDate = date_dim.bottom(1)[0].date; //setting the the min an max values for the dates here
-        var maxDate = date_dim.top(1)[0].date;
-        function spend_by_name(name) {
-          return function(d) {
-            if (d.name === name) {
-              //if the data name equals any  name from the object the amount spent will be retirned otherwise 0 wil be
-              return +d.spend;
-            } else {
-              return 0;
-            }
-          };
-        }
+        var spendByNamesStoreB = name_dim.group().reduceSum(function(d) {
+          if (d.store === "B") {
+            return +d.spend;
+          } else {
+            return 0;
+          }
+        });
 
-        var tomSpendByMonth = date_dim.group().reduceSum(spend_by_name("Tom")); //grouping each spend per month here
-        var bobSpendByMonth = date_dim.group().reduceSum(spend_by_name("Bob")); // the spend by month function from above is passed in here
-        var aliceSpendByMonth = date_dim //
-          .group()
-          .reduceSum(spend_by_name("Alice"));
-        // creating ther chart below
-        var compositeChart = dc.compositeChart("#composite-chart");
-        compositeChart
-          .width(990)
-          .height(200)
-          .dimension(date_dim) // adding thr date dim function from above to create  the date demension
-          .x(d3.time.scale().domain([minDate, maxDate])) //adding thr min an max date var from above to the x axis here
-          .yAxisLabel("Spend") //adding spend as the label
+        var stackedChart = dc.barChart("#stacked-chart");
+        stackedChart
+          .width(500)
+          .height(500)
+          .dimension(name_dim)
+          .group(spendByNamesStoreA, "Store A")
+          .stack(spendByNamesStoreA, "Store B")
+          .transitionDuration(500)
+          .x(d3.scale.ordinal())
+          .xUnits(dc.units.ordinal)
+          .xAxisLabel("Person")
           .legend(
-            // the legend is added here and  contains every thing on the grid
             dc
-              .legend() //this first part conatins the names with the small colored boxes beside them
-              .x(80)
+              .legend()
+              .x(220)
               .y(20)
-              .itemHeight(13)
+              .itemHeight(15)
               .gap(5)
-          )
-          .renderHorizontalGridLines(true) // this adds the lines in the background
-          .compose([
-            // this adds the lines to the graph for each person
-            dc
-              .lineChart(compositeChart)
-              .colors("green")
-              .group(tomSpendByMonth, "Tom"),
-            dc
-              .lineChart(compositeChart)
-              .colors("red")
-              .group(bobSpendByMonth, "Bob"),
-            dc
-              .lineChart(compositeChart)
-              .colors("blue")
-              .group(aliceSpendByMonth, "Alice")
-          ])
-          .brushOn(false) //this on by default so is turned off here
-          .render();
+          );
+
+        stackedChart.margins().left = 50;
         dc.renderAll();
       }
     </script>
