@@ -4,16 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
-
     <title>D3 and Scalable Vector Graphics</title>
 
     <link
       rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/dc/2.1.8/dc.min.css"
       type="text/css"
+      href="https://cdnjs.cloudflare.com/ajax/libs/dc/2.1.8/dc.min.css"
     />
     <style>
-      /* clear left added so each chart displays on its own line */
       div {
         clear: left;
       }
@@ -31,57 +29,88 @@
       type="text/javascript"
       src="https://cdnjs.cloudflare.com/ajax/libs/dc/2.1.8/dc.js"
     ></script>
-    <!-- libary that allows you to defer calling a function until the data is ready -->
     <script
       type="text/javascript"
       src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"
     ></script>
   </head>
   <body>
-    <!-- adding divs for the bar charts here -->
+    <h1>Data Visualisation</h1>
+
+    <h2>DC LineChart</h2>
 
     <div>
-      <h3>Total Spend Per Month</h3>
-      <div id="spend-per-month"></div>
+      <h3>Spent Per Month Per Person</h3>
+      <div id="composite-chart"></div>
     </div>
 
     <script>
       queue()
-        .defer(d3.json, "data.json") // this  gets the json file brings it back in the form of d3
-        .await(makeGraphs); // what every you call function here must match custom function below
-
+        .defer(d3.json, "data.json") //linking to json file here
+        .await(makeGraphs); //this must match the name of the function below
       function makeGraphs(error, transactionsData) {
+        // setting up all the varibles first
         var ndx = crossfilter(transactionsData); //cross filter will group the data by batch an then compute the sum of those batches
-
         var parseDate = d3.time.format("%d/%m/%Y").parse; // making sure the data here is formatted in a way that can be repersented by crossfilter,dc and d3
-
         transactionsData.forEach(function(d) {
-          // must be a capital Y in format function!
-          //looping trough the date entries with a four each function here
-
+          //looping trough the dates from json object here
           d.date = parseDate(d.date); //parsing(converting some sort of date an time infomation into am object) the date entries here
         });
 
-        var date_dim = ndx.dimension(dc.pluck("date")); //using the demension method here to divide the dates from the rest an plucking them from array
-        var total_spend_per_date = date_dim
-          .group()
-          .reduceSum(dc.pluck("spend")); // getting total spend per month here
-
-        var minDate = date_dim.bottom(1)[0].date; // getting min an max dates here
+        var date_dim = ndx.dimension(dc.pluck("date")); // setting up the date dimesions first
+        var minDate = date_dim.bottom(1)[0].date; //setting the the min an max values for the dates here
         var maxDate = date_dim.top(1)[0].date;
+        function spend_by_name(name) {
+          return function(d) {
+            if (d.name === name) {
+              //if the data name equals any  name from the object the amount spent will be retirned otherwise 0 wil be
+              return +d.spend;
+            } else {
+              return 0;
+            }
+          };
+        }
 
-        dc.lineChart("#spend-per-month") // creating a line chart here targeting div id from above
-          .width(1000)
-          .height(300)
-          .margins({ top: 10, right: 50, bottom: 30, left: 50 }) // these are realitive to the div thats targeted above  not to the entire screen
-          .dimension(date_dim) //passing in var from above to dimsensions function
-          .group(total_spend_per_date) //passing in var from above to group function
-          .transitionDuration(500) //transition function added here
-          .x(d3.time.scale().domain([minDate, maxDate])) // setting min an max dates on x axis here
-          .xAxisLabel("Month") // adding month to x axis
-          .yAxis()
-          .ticks(4); //adding the amount of ticks to y axis
-
+        var tomSpendByMonth = date_dim.group().reduceSum(spend_by_name("Tom")); //grouping each spend per month here
+        var bobSpendByMonth = date_dim.group().reduceSum(spend_by_name("Bob")); // the spend by month function from above is passed in here
+        var aliceSpendByMonth = date_dim //
+          .group()
+          .reduceSum(spend_by_name("Alice"));
+        // creating ther chart below
+        var compositeChart = dc.compositeChart("#composite-chart");
+        compositeChart
+          .width(990)
+          .height(200)
+          .dimension(date_dim) // adding thr date dim function from above to create  the date demension
+          .x(d3.time.scale().domain([minDate, maxDate])) //adding thr min an max date var from above to the x axis here
+          .yAxisLabel("Spend") //adding spend as the label
+          .legend(
+            // the legend is added here to contain every thing on the grid
+            dc
+              .legend() //this first part conatins the names with the small colored boxes beside them
+              .x(80)
+              .y(20)
+              .itemHeight(13)
+              .gap(5)
+          )
+          .renderHorizontalGridLines(true) // this adds the lines in the background
+          .compose([
+            // this adds the lines to the graph for each person
+            dc
+              .lineChart(compositeChart)
+              .colors("green")
+              .group(tomSpendByMonth, "Tom"),
+            dc
+              .lineChart(compositeChart)
+              .colors("red")
+              .group(bobSpendByMonth, "Bob"),
+            dc
+              .lineChart(compositeChart)
+              .colors("blue")
+              .group(aliceSpendByMonth, "Alice")
+          ])
+          .brushOn(false) //this on by default so is turned off here
+          .render();
         dc.renderAll();
       }
     </script>
