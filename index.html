@@ -47,36 +47,44 @@
       function makeGraphs(error, transactionsData) {
         // setting up all the varibles first
         var ndx = crossfilter(transactionsData); //cross filter will group the data by batch an then compute the sum of those batches
-        var name_dim = ndx.dimension(dc.pluck("name"));
+        var name_dim = ndx.dimension(dc.pluck("name")); //grabbing name from the json array here
 
+        // creating two var here
         var spendByNamesStoreA = name_dim.group().reduceSum(function(d) {
+          //breaking them up into sepearte dem using name var from above
           if (d.store === "A") {
-            return +d.spend;
+            // if the store  is equal to store A
+            return +d.spend; // return data amount spent (+ changes it from a string to a num)
           } else {
+            // if its not return 0
             return 0;
           }
         });
 
         var spendByNamesStoreB = name_dim.group().reduceSum(function(d) {
+          //breaking them up into sepearte dem using name var from above
           if (d.store === "B") {
-            return +d.spend;
+            // if the store  is equal to store B
+            return +d.spend; // return data amount spent (+ changes it from a string to a num)
           } else {
+            // if its not return 0
             return 0;
           }
         });
 
-        var stackedChart = dc.barChart("#stacked-chart");
+        var stackedChart = dc.barChart("#stacked-chart"); // connecting bar chart to div
         stackedChart
-          .width(500)
+          .width(500) // adding height width an names to barchart
           .height(500)
           .dimension(name_dim)
-          .group(spendByNamesStoreA, "Store A")
-          .stack(spendByNamesStoreA, "Store B")
-          .transitionDuration(500)
-          .x(d3.scale.ordinal())
-          .xUnits(dc.units.ordinal)
-          .xAxisLabel("Person")
+          .group(spendByNamesStoreA, "Store A") //adding amount spent in store A
+          .stack(spendByNamesStoreA, "Store B") // an stacking amount store B on top, passing in functions from above
+          .transitionDuration(500) //adding transtion on barchart columns
+          .x(d3.scale.ordinal()) // adding scale to the x axis
+          .xUnits(dc.units.ordinal) //adding units to the x axis
+          .xAxisLabel("Person") // adding label to the x axis
           .legend(
+            // adding the legend here(small sqaures)
             dc
               .legend()
               .x(220)
@@ -85,7 +93,7 @@
               .gap(5)
           );
 
-        stackedChart.margins().left = 50;
+        stackedChart.margins().left = 50; // adding magin to chart
         dc.renderAll();
       }
     </script>
