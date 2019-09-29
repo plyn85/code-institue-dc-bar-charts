@@ -35,9 +35,13 @@
     ></script>
   </head>
   <body>
+    <h1>Data Visualisation</h1>
+
+    <h2>DC Scatter Plot</h2>
+
     <div>
-      <h3>Spend Per Person Broken Down By Store</h3>
-      <div id="stacked-chart"></div>
+      <h3>Transactions per date</h3>
+      <div id="scatter-plot"></div>
     </div>
 
     <script>
@@ -46,54 +50,46 @@
         .await(makeGraphs); //this must match the name of the function below
       function makeGraphs(error, transactionsData) {
         // setting up all the varibles first
-        var ndx = crossfilter(transactionsData); //cross filter will group the data by batch an then compute the sum of those batches
-        var name_dim = ndx.dimension(dc.pluck("name")); //grabbing name from the json array here
+        //cross filter will group the data by batch an then compute the sum of those batches
+        var ndx = crossfilter(transactionsData);
 
-        // creating two var here
-        var spendByNamesStoreA = name_dim.group().reduceSum(function(d) {
-          //breaking them up into sepearte dem using name var from above
-          if (d.store === "A") {
-            // if the store  is equal to store A
-            return +d.spend; // return data amount spent (+ changes it from a string to a num)
-          } else {
-            // if its not return 0
-            return 0;
-          }
+        // adding a format function for the dates
+        var parseDate = d3.time.format("%d/%m/%Y").parse;
+
+        //looping through json array grabbing the dates an coverting them into intergers
+        transactionsData.forEach(function(d) {
+          d.date = parseDate(d.date); //looping through json array grabbing the dates an coverting them into intergers
         });
 
-        var spendByNamesStoreB = name_dim.group().reduceSum(function(d) {
-          //breaking them up into sepearte dem using name var from above
-          if (d.store === "B") {
-            // if the store  is equal to store B
-            return +d.spend; // return data amount spent (+ changes it from a string to a num)
-          } else {
-            // if its not return 0
-            return 0;
-          }
+        // plucking dates from json array here
+        var date_dim = ndx.dimension(function(d) {
+          return d.date;
         });
 
-        var stackedChart = dc.barChart("#stacked-chart"); // connecting bar chart to div
-        stackedChart
-          .width(500) // adding height width an names to barchart
-          .height(500)
-          .dimension(name_dim)
-          .group(spendByNamesStoreA, "Store A") //adding amount spent in store A
-          .stack(spendByNamesStoreA, "Store B") // an stacking amount store B on top, passing in functions from above
-          .transitionDuration(500) //adding transtion on barchart columns
-          .x(d3.scale.ordinal()) // adding scale to the x axis
-          .xUnits(dc.units.ordinal) //adding units to the x axis
-          .xAxisLabel("Person") // adding label to the x axis
-          .legend(
-            // adding the legend here(small sqaures)
-            dc
-              .legend()
-              .x(220)
-              .y(20)
-              .itemHeight(15)
-              .gap(5)
-          );
+        var minDate = date_dim.bottom(1)[0].date; // adding start  and end  dates dims to var here
+        var maxDate = date_dim.top(1)[0].date; // they provide values for the domain
 
-        stackedChart.margins().left = 50; // adding magin to chart
+        //function returns two values here
+        var spend_dim = ndx.dimension(function(d) {
+          return [d.date, d.spend];
+        });
+
+        //reduce sum takes the total amount for for a particular grouping
+        var spend_group = spend_dim.group().reduceSum(dc.pluck("spend"));
+
+        console.log(spend_group.all());
+
+        var spend_chart = dc.scatterPlot("#scatter-plot");
+        spend_chart
+          .width(768)
+          .height(480)
+          .x(d3.time.scale().domain([minDate, maxDate]))
+          .brushOn(false)
+          .symbolSize(8)
+          .clipPadding(8)
+          .yAxisLabel("Amount Spent")
+          .dimension(spend_dim)
+          .group(spend_group);
         dc.renderAll();
       }
     </script>
