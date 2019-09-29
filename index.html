@@ -41,16 +41,8 @@
     <!-- adding divs for the bar charts here -->
 
     <div>
-      <h3>Total Spend Per Person</h3>
-      <div id="per-person-chart"></div>
-    </div>
-    <div>
-      <h3>Total Spend Per Store</h3>
-      <div id="per-store-chart"></div>
-    </div>
-    <div>
-      <h3>Total Spend Per State</h3>
-      <div id="per-state-chart"></div>
+      <h3>Total Spend Per Month</h3>
+      <div id="spend-per-month"></div>
     </div>
 
     <script>
@@ -59,43 +51,38 @@
         .await(makeGraphs); // what every you call function here must match custom function below
 
       function makeGraphs(error, transactionsData) {
-        var ndx = crossfilter(transactionsData);
+        var ndx = crossfilter(transactionsData); //cross filter will group the data by batch an then compute the sum of those batches
 
-        var name_dim = ndx.dimension(dc.pluck("name")); // grabbing the names of the json array here
-        var total_spend = name_dim.group().reduceSum(dc.pluck("spend")); // group the names of json array an breaking it into spend per name is whats happening here
+        var parseDate = d3.time.format("%d/%m/%Y").parse; // making sure the data here is formatted in a way that can be repersented by crossfilter,dc and d3
 
-        dc.pieChart("#per-person-chart") // adding the pie chart to the id of div here
-          .height(300) // adding height an a radius for the pie chart here
-          .radius(90)
-          .transitionDuration(1500) // adding a transtion here
-          .dimension(name_dim) // name_div var from above here
-          .group(total_spend); // grouping total_spend var from above here
+        transactionsData.forEach(function(d) {
+          // must be a capital Y in format function!
+          //looping trough the date entries with a four each function here
 
-        var store_dim = ndx.dimension(dc.pluck("store")); // grabbing the stores of the json array here
-        var total_spend_per_store = store_dim
+          d.date = parseDate(d.date); //parsing(converting some sort of date an time infomation into am object) the date entries here
+        });
+
+        var date_dim = ndx.dimension(dc.pluck("date")); //using the demension method here to divide the dates from the rest an plucking them from array
+        var total_spend_per_date = date_dim
           .group()
-          .reduceSum(dc.pluck("spend")); // group the stores of json array and  breaking it into spend per name is whats happening here
+          .reduceSum(dc.pluck("spend")); // getting total spend per month here
 
-        dc.pieChart("#per-store-chart") // adding the pie chart to the id of div here
-          .height(300) // adding height an a radius for the pie chart here
-          .radius(90)
-          .transitionDuration(1500) // adding a transtion here
-          .dimension(store_dim) // name_div var from above here
-          .group(total_spend_per_store); // grouping total_spend_per_store var from above here
+        var minDate = date_dim.bottom(1)[0].date; // getting min an max dates here
+        var maxDate = date_dim.top(1)[0].date;
 
-        var state_dim = ndx.dimension(dc.pluck("state")); // grabbing the states of the json array here
-        var total_spend_per_state = state_dim
-          .group()
-          .reduceSum(dc.pluck("spend")); // group the states of json array an breaking it into spend per name is whats happening here
+        dc.lineChart("#spend-per-month") // creating a line chart here targeting div id from above
+          .width(1000)
+          .height(300)
+          .margins({ top: 10, right: 50, bottom: 30, left: 50 }) // these are realitive to the div thats targeted above  not to the entire screen
+          .dimension(date_dim) //passing in var from above to dimsensions function
+          .group(total_spend_per_date) //passing in var from above to group function
+          .transitionDuration(500) //transition function added here
+          .x(d3.time.scale().domain([minDate, maxDate])) // setting min an max dates on x axis here
+          .xAxisLabel("Month") // adding month to x axis
+          .yAxis()
+          .ticks(4); //adding the amount of ticks to y axis
 
-        dc.pieChart("#per-state-chart") // adding the pie chart to the id of div here
-          .height(300) // adding the pie chart to the id of div here
-          .radius(90)
-          .transitionDuration(1500) // adding a transtion here
-          .dimension(state_dim) // name_div var from above here
-          .group(total_spend_per_state); // grouping total_spend_state var from above here
-
-        dc.renderAll(); // must be added to render the pie charts
+        dc.renderAll();
       }
     </script>
   </body>
