@@ -40,8 +40,8 @@
     <h2>DC Scatter Plot</h2>
 
     <div>
-      <h3>Transactions per date</h3>
-      <div id="scatter-plot"></div>
+      <h3>Transactions Size</h3>
+      <div id="pie-chart"></div>
     </div>
 
     <script>
@@ -52,57 +52,26 @@
         // setting up all the varibles first
         //cross filter will group the data by batch an then compute the sum of those batches
         var ndx = crossfilter(transactionsData);
-
-        // adding a format function for the dates//looping through json array grabbing the dates an coverting them into intergers
-        var parseDate = d3.time.format("%d/%m/%Y").parse;
-        transactionsData.forEach(function(d) {
-          d.date = parseDate(d.date);
+        // function added here if amount spent is less than 200 one of the too if statments will be called
+        var size_dimension = ndx.dimension(function(d) {
+          if (d.spend < 200) {
+            return "big";
+          } else {
+            return "small";
+          }
         });
 
-        // plucking dates from json array here
-        var date_dim = ndx.dimension(function(d) {
-          return d.date;
-        });
+        // testing size_dimension function here by grouping it to an array an consle logging all of that array
+        var size_group = size_dimension.group();
+        console.log(size_group.all());
 
-        var minDate = date_dim.bottom(1)[0].date; // adding start  and end  dates dims to var here
-        var maxDate = date_dim.top(1)[0].date; // they provide values for the domain
-
-        //what every values are added to function array here will be put into object whicj can be dispaled when hovered
-        var spend_dim = ndx.dimension(function(d) {
-          return [d.date, d.spend, d.name];
-        });
-
-        //reduce sum takes the total amount for for a particular grouping
-        var spend_group = spend_dim.group().reduceSum(dc.pluck("spend"));
-
-        // mapping colors one to one from domain to range here a color matches to each person in the order
-        var personColors = d3.scale
-          .ordinal()
-          .domain(["Tom", "Bob", "Alice"])
-          .range(["red", "green", "blue"]);
-
-        console.log(spend_group.all());
-
-        var spend_chart = dc.scatterPlot("#scatter-plot");
-        spend_chart
-          .width(768)
-          .height(480)
-          .x(d3.time.scale().domain([minDate, maxDate]))
-          .brushOn(false)
-          .symbolSize(8)
-          .clipPadding(8)
-          .yAxisLabel("Amount Spent")
-          // this will return the name of person and amount spent  on graph when hoverd over by using key values of object created from spend_dim var
-          .title(function(d) {
-            return d.key[2] + " spent " + d.key[1];
-          })
-          // this will access the colors above an asgin them to each person
-          .colorAccessor(function(d) {
-            return d.key[2];
-          })
-          .colors(personColors)
-          .dimension(spend_dim)
-          .group(spend_group);
+        var pieChart = dc.pieChart("#pie-chart");
+        pieChart
+          .height(300)
+          .radius(90)
+          .transitionDuration(1500)
+          .dimension(size_dimension)
+          .group(size_group);
         dc.renderAll();
       }
     </script>
