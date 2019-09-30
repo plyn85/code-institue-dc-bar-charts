@@ -40,8 +40,8 @@
     <h2>DC Scatter Plot</h2>
 
     <div>
-      <h3>Transactions Size</h3>
-      <div id="pie-chart"></div>
+      <h3>Spend Per Person</h3>
+      <div id="bar-chart"></div>
     </div>
 
     <script>
@@ -52,27 +52,56 @@
         // setting up all the varibles first
         //cross filter will group the data by batch an then compute the sum of those batches
         var ndx = crossfilter(transactionsData);
-        // function added here if amount spent is less than 200 one of the too if statments will be called
-        var size_dimension = ndx.dimension(function(d) {
-          if (d.spend < 200) {
-            return "big";
-          } else {
-            return "small";
+
+        // this plucks the names from the json array an are the deminsions that will appear on the bar chart
+        var name_dim = ndx.dimension(dc.pluck("name"));
+
+        //var average_spend_per_person = name_dim.group().reduce(adder, remover,intialiser)
+
+        var average_spend_by_person = name_dim.group().reduce(
+          //function below counts  by adding one to count each time an new datem(person) is added
+          // and the total gets the total amount that was spent by each entry (person)
+          // and then our average is the total amount spent divded by the people who spent it
+          function(p, v) {
+            p.count++;
+            p.total += v.spend;
+            p.average = p.total / p.count;
+            return p;
+          },
+          //remove a fact
+          function(p, v) {
+            p.count--;
+            if (p.count == 0) {
+              p.total = 0;
+              p.average = 0;
+            } else {
+              p.total -= v.spend;
+              p.average = p.total / p.count;
+            }
+            return p;
+          },
+          //initializes the reducer
+          function() {
+            return { count: 0, total: 0, average: 0 };
           }
-        });
+        );
+        // console.log(average_spend_per_person.all());
 
-        // testing size_dimension function here by grouping it to an array an consle logging all of that array
-        var size_group = size_dimension.group();
-        console.log(size_group.all());
+        var average_chart = dc.barChart("#bar-chart");
 
-        //adding a pie chart here for group puts data in the array an demension will specify whats in the array
-        var pieChart = dc.pieChart("#pie-chart");
-        pieChart
-          .height(300)
-          .radius(90)
-          .transitionDuration(1500)
-          .dimension(size_dimension)
-          .group(size_group);
+        average_chart
+          .height(500)
+          .width(500)
+          .gap(25)
+          .dimension(name_dim)
+          .group(average_spend_by_person)
+          // the value accessor is the value passed trough  y scale to the determine the location
+          .valueAccessor(function(d) {
+            return d.value.average;
+          })
+          // ordinal scale and ordinal units  units  because there catagories are names
+          .x(d3.scale.ordinal())
+          .xUnits(dc.units.ordinal);
         dc.renderAll();
       }
     </script>
